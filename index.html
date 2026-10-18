@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>SchemaForge — Visual Database Schema Designer</title>
+    <meta name="description" content="Visual database schema designer with interactive canvas, multi-dialect SQL export/import, relationships, and templates." />
+    <meta property="og:title" content="SchemaForge — Visual Database Schema Designer" />
+    <meta property="og:description" content="Visual database schema designer with interactive canvas, multi-dialect SQL export/import, relationships, and templates." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Application Stylesheet -->
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Top Navigation Bar -->
+      <header class="app-header safe-top">
+        <div class="header-left">
+          <div class="brand" id="brand-logo" title="SchemaForge">
+            <span class="brand-icon">
+              <!-- Inline Database Nodes SVG -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
+              </svg>
+            </span>
+            <span>SchemaForge</span>
+          </div>
+
+          <!-- Project Selector -->
+          <button class="project-selector" id="project-selector-btn" title="Switch or manage projects">
+            <span id="current-project-name">My Schema</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+
+          <!-- Dialect Selector Badge -->
+          <button class="dialect-badge" id="dialect-toggle-btn" title="Toggle Dialect: PostgreSQL / MySQL / SQLite">
+            <span id="dialect-label">PostgreSQL</span>
+          </button>
+        </div>
+
+        <!-- Center Actions -->
+        <div class="header-center">
+          <button class="btn-icon" id="undo-btn" title="Undo (Cmd/Ctrl+Z)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button class="btn-icon" id="redo-btn" title="Redo (Cmd/Ctrl+Shift+Z)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          </button>
+
+          <button class="btn-secondary" id="add-table-btn" title="Add Table (N)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Table</span>
+            <span class="kbd-shortcut">N</span>
+          </button>
+
+          <button class="btn-secondary" id="auto-layout-btn" title="Auto Layout Diagram">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            <span>Layout</span>
+          </button>
+
+          <button class="btn-secondary" id="templates-btn" title="Starter Templates">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Templates</span>
+          </button>
+
+          <button class="btn-secondary" id="health-btn" title="Schema Health Inspection">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span>Health</span>
+            <span id="health-badge-count" class="kbd-shortcut" style="display:none; color:var(--color-amber);">0</span>
+          </button>
+        </div>
+
+        <!-- Right Actions -->
+        <div class="header-right">
+          <button class="btn-secondary" id="import-btn" title="Import SQL or JSON">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Import</span>
+          </button>
+
+          <button class="btn-primary" id="export-btn" title="Export SQL, PNG, SVG or JSON">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Export</span>
+          </button>
+
+          <button class="btn-icon" id="share-btn" title="Share via compressed URL hash">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+
+          <button class="btn-icon" id="theme-toggle-btn" title="Toggle Theme (Dark / Light)">
+            <!-- Moon / Sun SVG -->
+            <svg id="theme-moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <svg id="theme-sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          </button>
+
+          <button class="btn-icon" id="cmd-palette-btn" title="Command Palette (Cmd/Ctrl+K)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>
+          </button>
+
+          <button class="btn-icon" id="shortcuts-help-btn" title="Keyboard Shortcuts (?)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Canvas Viewport -->
+      <main class="canvas-viewport" id="canvas-viewport">
+        <!-- Transformed Container -->
+        <div class="canvas-container" id="canvas-container">
+          <!-- Relationships SVG Layer -->
+          <svg class="relationships-layer" id="relationships-svg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Crow's foot and marker symbols -->
+              <marker id="marker-one-start" markerWidth="12" markerHeight="12" refX="2" refY="6" orient="auto">
+                <line x1="2" y1="1" x2="2" y2="11" stroke="currentColor" stroke-width="2" />
+                <line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="2" />
+              </marker>
+              <marker id="marker-many-start" markerWidth="16" markerHeight="16" refX="1" refY="8" orient="auto">
+                <path d="M 12 2 L 1 8 L 12 14" fill="none" stroke="currentColor" stroke-width="2" />
+                <line x1="1" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="2" />
+              </marker>
+              <marker id="marker-one-end" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+                <line x1="10" y1="1" x2="10" y2="11" stroke="currentColor" stroke-width="2" />
+                <line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="2" />
+              </marker>
+              <marker id="marker-many-end" markerWidth="16" markerHeight="16" refX="15" refY="8" orient="auto">
+                <path d="M 4 2 L 15 8 L 4 14" fill="none" stroke="currentColor" stroke-width="2" />
+                <line x1="0" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="2" />
+              </marker>
+            </defs>
+            <g id="relationships-group"></g>
+            <path id="connection-preview" class="connection-preview-line" d="" style="display:none;"></path>
+          </svg>
+
+          <!-- Tables Layer -->
+          <div class="tables-layer" id="tables-container"></div>
+        </div>
+
+        <!-- Marquee Selection Box -->
+        <div class="selection-marquee" id="selection-marquee"></div>
+
+        <!-- Canvas Floating Controls (Zoom, Fit, Snap, Minimap) -->
+        <div class="canvas-controls">
+          <button class="btn-icon" id="zoom-out-btn" title="Zoom Out (-)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <span class="zoom-level-label" id="zoom-label">100%</span>
+          <button class="btn-icon" id="zoom-in-btn" title="Zoom In (+)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="canvas-controls-divider"></div>
+          <button class="btn-icon" id="fit-screen-btn" title="Fit to Screen (F)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+          <button class="btn-icon" id="snap-grid-btn" title="Toggle Snap to Grid (G)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+          </button>
+          <button class="btn-icon" id="toggle-minimap-btn" title="Toggle Minimap (M)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          </button>
+        </div>
+
+        <!-- Minimap Container -->
+        <div class="minimap-container" id="minimap-container">
+          <canvas class="minimap-canvas" id="minimap-canvas"></canvas>
+          <div class="minimap-viewport-rect" id="minimap-viewport"></div>
+        </div>
+
+        <!-- Empty Canvas State & Starter Templates -->
+        <div class="canvas-empty-state" id="empty-state">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.29 7 12 12 20.71 7"></polyline>
+              <line x1="12" y1="22" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <h2 class="empty-title">Your canvas is waiting</h2>
+          <p class="empty-desc">Create your schema from scratch or jumpstart your database architecture with one of our production-ready templates.</p>
+          
+          <div class="template-grid">
+            <div class="template-card" data-template="blog">
+              <div class="template-card-title">
+                <span>Blog & Publishing</span>
+                <span class="template-card-count">6 tables</span>
+              </div>
+              <p class="template-card-desc">Users, posts, categories, comments, tags, and post taxonomy.</p>
+            </div>
+
+            <div class="template-card" data-template="ecommerce">
+              <div class="template-card-title">
+                <span>E-Commerce Store</span>
+                <span class="template-card-count">7 tables</span>
+              </div>
+              <p class="template-card-desc">Customers, orders, order items, products, categories, reviews & payments.</p>
+            </div>
+
+            <div class="template-card" data-template="school">
+              <div class="template-card-title">
+                <span>School Management</span>
+                <span class="template-card-count">7 tables</span>
+              </div>
+              <p class="template-card-desc">Students, teachers, courses, enrollments, classrooms, grades & attendance.</p>
+            </div>
+
+            <div class="template-card" data-template="saas">
+              <div class="template-card-title">
+                <span>SaaS Multi-Tenancy</span>
+                <span class="template-card-count">8 tables</span>
+              </div>
+              <p class="template-card-desc">Tenants, users, subscriptions, plans, teams, memberships & audit logs.</p>
+            </div>
+          </div>
+
+          <div class="empty-actions">
+            <button class="btn-primary" id="empty-add-table-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Create Empty Table</span>
+            </button>
+            <button class="btn-secondary" id="empty-import-sql-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Import SQL DDL</span>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Side Panel / Mobile Bottom Sheet for Table & Column Editor -->
+      <aside class="editor-panel safe-bottom" id="editor-panel">
+        <div class="sheet-drag-handle" id="sheet-drag-handle"></div>
+        <div class="editor-header">
+          <div class="editor-title" id="editor-panel-title">Edit Table</div>
+          <button class="btn-icon" id="editor-close-btn" title="Close editor (Esc)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="editor-body" id="editor-body">
+          <!-- Table Name -->
+          <div class="form-group">
+            <label class="form-label" for="edit-table-name">Table Name</label>
+            <input type="text" id="edit-table-name" class="form-input" placeholder="e.g. users" />
+          </div>
+
+          <!-- Color Swatches -->
+          <div class="form-group">
+            <label class="form-label">Accent Color</label>
+            <div class="color-picker-row" id="color-swatches-container">
+              <div class="color-swatch palette-emerald" data-color="emerald" title="Emerald"></div>
+              <div class="color-swatch palette-indigo" data-color="indigo" title="Indigo"></div>
+              <div class="color-swatch palette-sky" data-color="sky" title="Sky"></div>
+              <div class="color-swatch palette-amber" data-color="amber" title="Amber"></div>
+              <div class="color-swatch palette-rose" data-color="rose" title="Rose"></div>
+              <div class="color-swatch palette-purple" data-color="purple" title="Purple"></div>
+              <div class="color-swatch palette-teal" data-color="teal" title="Teal"></div>
+              <div class="color-swatch palette-slate" data-color="slate" title="Slate"></div>
+            </div>
+          </div>
+
+          <!-- Table Comment -->
+          <div class="form-group">
+            <label class="form-label" for="edit-table-comment">Table Comment / Description</label>
+            <textarea id="edit-table-comment" class="form-textarea" placeholder="Optional description for documentation..."></textarea>
+          </div>
+
+          <!-- Columns Section -->
+          <div class="columns-header-row">
+            <label class="form-label" style="margin-bottom:0;">Columns (<span id="column-count-label">0</span>)</label>
+            <button class="btn-secondary" id="add-column-btn" style="padding:4px 8px; font-size:11px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add Column</span>
+            </button>
+          </div>
+
+          <div id="columns-editor-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <div class="editor-footer">
+          <button class="btn-secondary" id="duplicate-table-btn" title="Duplicate table (Cmd/Ctrl+D)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Duplicate</span>
+          </button>
+          <button class="btn-secondary" id="delete-table-btn" style="color:var(--color-rose); border-color:rgba(244,63,94,0.3);" title="Delete Table">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <span>Delete Table</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Mobile Bottom Action Toolbar -->
+      <nav class="mobile-bottom-bar safe-bottom">
+        <button class="mobile-bar-btn" id="mobile-add-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Table</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobile-undo-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          <span>Undo</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobile-redo-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          <span>Redo</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobile-fit-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span>Fit</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobile-export-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Export</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobile-menu-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          <span>More</span>
+        </button>
+      </nav>
+
+      <!-- Relationship Editor Modal -->
+      <div class="modal-overlay" id="relation-modal">
+        <div class="modal-window" style="max-width: 440px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <span>Relationship Settings</span>
+            </div>
+            <button class="btn-icon" id="relation-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+            <div id="relation-summary" style="font-size:13px; color:var(--text-primary); padding:10px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);"></div>
+            
+            <div id="relation-type-warning" style="display:none; padding:8px 10px; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); border-radius:var(--radius-sm); font-size:12px; color:var(--color-rose);">
+              ⚠️ Warning: Source and target column data types do not match!
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="relation-cardinality">Cardinality</label>
+              <select id="relation-cardinality" class="form-select">
+                <option value="1:N">One-to-Many (1 : N)</option>
+                <option value="1:1">One-to-One (1 : 1)</option>
+                <option value="N:M">Many-to-Many (N : M)</option>
+              </select>
+            </div>
+
+            <div id="junction-generator-box" style="display:none; padding:10px; background:var(--bg-active); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
+              <p style="font-size:12px; margin-bottom:8px; color:var(--accent-light);">Many-to-Many relationships typically use an intermediary junction table.</p>
+              <button class="btn-secondary" id="auto-generate-junction-btn" style="width:100%; justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                <span>Auto-generate Junction Table</span>
+              </button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div class="form-group">
+                <label class="form-label" for="relation-on-delete">ON DELETE</label>
+                <select id="relation-on-delete" class="form-select">
+                  <option value="CASCADE">CASCADE</option>
+                  <option value="SET NULL">SET NULL</option>
+                  <option value="RESTRICT">RESTRICT</option>
+                  <option value="NO ACTION">NO ACTION</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="relation-on-update">ON UPDATE</label>
+                <select id="relation-on-update" class="form-select">
+                  <option value="CASCADE">CASCADE</option>
+                  <option value="SET NULL">SET NULL</option>
+                  <option value="RESTRICT">RESTRICT</option>
+                  <option value="NO ACTION">NO ACTION</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="justify-content:space-between;">
+            <button class="btn-secondary" id="delete-relation-btn" style="color:var(--color-rose); border-color:rgba(244,63,94,0.3);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              <span>Delete</span>
+            </button>
+            <button class="btn-primary" id="save-relation-btn">Done</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export Modal -->
+      <div class="modal-overlay" id="export-modal">
+        <div class="modal-window" style="max-width: 680px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Export Schema</span>
+            </div>
+            <button class="btn-icon" id="export-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-tabs">
+            <button class="tab-btn is-active" data-export-tab="sql">SQL DDL</button>
+            <button class="tab-btn" data-export-tab="image">PNG / SVG Image</button>
+            <button class="tab-btn" data-export-tab="json">JSON Project</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- SQL Export Tab -->
+            <div id="export-tab-sql">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="form-label" style="margin-bottom:0;">Target Dialect:</span>
+                  <select id="export-dialect-select" class="form-select" style="width:140px; padding:4px 8px; font-size:12px;">
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="mysql">MySQL</option>
+                    <option value="sqlite">SQLite</option>
+                  </select>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn-secondary" id="copy-sql-btn" style="padding:4px 10px; font-size:12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <span>Copy</span>
+                  </button>
+                  <button class="btn-secondary" id="download-sql-btn" style="padding:4px 10px; font-size:12px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download .sql</span>
+                  </button>
+                </div>
+              </div>
+              <pre class="sql-code-block" id="sql-export-code"></pre>
+            </div>
+
+            <!-- Image Export Tab -->
+            <div id="export-tab-image" style="display:none; display:flex; flex-direction:column; gap:16px;">
+              <p style="font-size:13px; color:var(--text-secondary);">Export your full database diagram as high-resolution raster or scalable vector graphics.</p>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div style="padding:16px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); display:flex; flex-direction:column; gap:10px;">
+                  <div style="font-weight:600; font-size:14px; color:var(--text-primary);">PNG Image</div>
+                  <div style="font-size:12px; color:var(--text-muted);">High-resolution bitmap suitable for presentations, slides, and documentation.</div>
+                  <button class="btn-primary" id="download-png-btn" style="margin-top:auto;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download PNG</span>
+                  </button>
+                </div>
+
+                <div style="padding:16px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); display:flex; flex-direction:column; gap:10px;">
+                  <div style="font-weight:600; font-size:14px; color:var(--text-primary);">SVG Vector</div>
+                  <div style="font-size:12px; color:var(--text-muted);">Infinite-zoom vector format perfect for web embedding and sharp print output.</div>
+                  <button class="btn-primary" id="download-svg-btn" style="margin-top:auto;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download SVG</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- JSON Export Tab -->
+            <div id="export-tab-json" style="display:none; display:flex; flex-direction:column; gap:16px;">
+              <p style="font-size:13px; color:var(--text-secondary);">Save the entire schema project including tables, columns, relationships, and layout coordinates.</p>
+              <button class="btn-primary" id="download-json-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download Project JSON</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Modal -->
+      <div class="modal-overlay" id="import-modal">
+        <div class="modal-window" style="max-width: 640px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Import Schema</span>
+            </div>
+            <button class="btn-icon" id="import-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-tabs">
+            <button class="tab-btn is-active" data-import-tab="sql">SQL DDL</button>
+            <button class="tab-btn" data-import-tab="json">JSON File</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- SQL Import Tab -->
+            <div id="import-tab-sql" style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <label class="form-label" for="import-sql-textarea" style="margin-bottom:0;">Paste CREATE TABLE statements:</label>
+                <button class="btn-secondary" id="import-sample-sql-btn" style="padding:2px 8px; font-size:11px;">Load Sample DDL</button>
+              </div>
+              <textarea id="import-sql-textarea" class="form-textarea font-mono" style="min-height:220px; font-size:12px;" placeholder="CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE posts (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);"></textarea>
+              <div id="import-error-msg" style="display:none; padding:8px 10px; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); border-radius:var(--radius-sm); font-size:12px; color:var(--color-rose);"></div>
+            </div>
+
+            <!-- JSON Import Tab -->
+            <div id="import-tab-json" style="display:none; display:flex; flex-direction:column; gap:16px;">
+              <p style="font-size:13px; color:var(--text-secondary);">Select a SchemaForge project JSON file to restore your diagrams and layout.</p>
+              <input type="file" id="json-file-input" accept=".json,application/json" class="form-input" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-secondary" id="import-cancel-btn">Cancel</button>
+            <button class="btn-primary" id="import-execute-btn">Parse & Import</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects Manager Modal -->
+      <div class="modal-overlay" id="projects-modal">
+        <div class="modal-window" style="max-width: 480px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 8 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+              <span>Projects</span>
+            </div>
+            <button class="btn-icon" id="projects-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="new-project-name-input" class="form-input" placeholder="New project name..." />
+              <button class="btn-primary" id="create-project-btn">Create</button>
+            </div>
+            <div id="projects-list" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schema Health Modal -->
+      <div class="modal-overlay" id="health-modal">
+        <div class="modal-window" style="max-width: 520px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <span>Schema Health Inspection</span>
+            </div>
+            <button class="btn-icon" id="health-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div id="health-status-summary" style="margin-bottom:14px; font-size:13px; font-weight:500;"></div>
+            <div id="health-issues-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Command Palette Modal -->
+      <div class="modal-overlay" id="cmd-palette-modal">
+        <div class="modal-window command-palette-window">
+          <div class="palette-input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="cmd-palette-input" class="palette-input" placeholder="Type a command, or search tables and columns..." autocomplete="off" />
+            <span class="kbd-shortcut">ESC</span>
+          </div>
+          <div class="palette-list" id="cmd-palette-list"></div>
+        </div>
+      </div>
+
+      <!-- Shortcuts Help Modal -->
+      <div class="modal-overlay" id="shortcuts-modal">
+        <div class="modal-window" style="max-width: 480px;">
+          <div class="modal-header">
+            <div class="modal-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+              <span>Keyboard Shortcuts</span>
+            </div>
+            <button class="btn-icon" id="shortcuts-modal-close-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div style="display:grid; grid-template-columns:1fr auto; gap:10px; font-size:13px; align-items:center;">
+              <span style="color:var(--text-secondary);">New Table</span>
+              <span class="kbd-shortcut">N</span>
+
+              <span style="color:var(--text-secondary);">Command Palette</span>
+              <span class="kbd-shortcut">⌘ / Ctrl + K</span>
+
+              <span style="color:var(--text-secondary);">Fit to Screen</span>
+              <span class="kbd-shortcut">F</span>
+
+              <span style="color:var(--text-secondary);">Delete Selected Table / Line</span>
+              <span class="kbd-shortcut">Delete / Backspace</span>
+
+              <span style="color:var(--text-secondary);">Undo Action</span>
+              <span class="kbd-shortcut">⌘ / Ctrl + Z</span>
+
+              <span style="color:var(--text-secondary);">Redo Action</span>
+              <span class="kbd-shortcut">⌘ / Ctrl + Shift + Z</span>
+
+              <span style="color:var(--text-secondary);">Duplicate Selected Table</span>
+              <span class="kbd-shortcut">⌘ / Ctrl + D</span>
+
+              <span style="color:var(--text-secondary);">Select All Tables</span>
+              <span class="kbd-shortcut">⌘ / Ctrl + A</span>
+
+              <span style="color:var(--text-secondary);">Pan Canvas</span>
+              <span class="kbd-shortcut">Space + Drag / Drag empty space</span>
+
+              <span style="color:var(--text-secondary);">Multi-Select Tables</span>
+              <span class="kbd-shortcut">Shift + Click / Drag box</span>
+
+              <span style="color:var(--text-secondary);">Zoom In / Out</span>
+              <span class="kbd-shortcut">Wheel / Pinch / + / -</span>
+
+              <span style="color:var(--text-secondary);">Toggle Snap to Grid</span>
+              <span class="kbd-shortcut">G</span>
+
+              <span style="color:var(--text-secondary);">Toggle Minimap</span>
+              <span class="kbd-shortcut">M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Container -->
+      <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

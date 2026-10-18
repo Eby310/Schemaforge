@@ -1,0 +1,6 @@
+{
+  "name": "SchemaForge - Visual Database Schema Designer",
+  "description": "Visual database schema designer with interactive canvas, multi-dialect SQL export/import, relationships, and templates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
